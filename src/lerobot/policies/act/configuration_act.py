@@ -88,6 +88,10 @@ class ACTConfig(PreTrainedConfig):
         dropout: Dropout to use in the transformer layers (see code for details).
         kl_weight: The weight to use for the KL-divergence component of the loss if the variational objective
             is enabled. Loss is then calculated as: `reconstruction_loss + kl_weight * kld_loss`.
+        action_loss_weights: Optional per-action-dimension multiplier on the L1 reconstruction loss, length
+            must equal the action dimension. Defaults to None, which is exactly equivalent to uniform
+            weighting (the original, unweighted behavior) - this is an opt-in knob, not a change to any
+            existing checkpoint's training behavior.
     """
 
     # Input / output structure.
@@ -131,6 +135,7 @@ class ACTConfig(PreTrainedConfig):
     # Training and loss computation.
     dropout: float = 0.1
     kl_weight: float = 10.0
+    action_loss_weights: list[float] | None = None
 
     # Training preset
     optimizer_lr: float = 1e-5

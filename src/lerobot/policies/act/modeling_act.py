@@ -140,9 +140,18 @@ class ACTPolicy(PreTrainedPolicy):
 
         actions_hat, (mu_hat, log_sigma_x2_hat) = self.model(batch)
 
-        l1_loss = (
-            F.l1_loss(batch[ACTION], actions_hat, reduction="none") * ~batch["action_is_pad"].unsqueeze(-1)
-        ).mean()
+        l1_loss_unreduced = F.l1_loss(batch[ACTION], actions_hat, reduction="none")
+        if self.config.action_loss_weights is not None:
+            weights = torch.tensor(
+                self.config.action_loss_weights, dtype=l1_loss_unreduced.dtype, device=l1_loss_unreduced.device
+            )
+            if weights.shape[0] != l1_loss_unreduced.shape[-1]:
+                raise ValueError(
+                    f"action_loss_weights has length {weights.shape[0]}, but the action dimension is "
+                    f"{l1_loss_unreduced.shape[-1]}."
+                )
+            l1_loss_unreduced = l1_loss_unreduced * weights
+        l1_loss = (l1_loss_unreduced * ~batch["action_is_pad"].unsqueeze(-1)).mean()
 
         loss_dict = {"l1_loss": l1_loss.item()}
         if self.config.use_vae:
